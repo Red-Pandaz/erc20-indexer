@@ -20,24 +20,35 @@ function App() {
 
   async function getTokenBalance() {
     const config = {
-      apiKey: '<-- COPY-PASTE YOUR ALCHEMY API KEY HERE -->',
+      apiKey: 'FjVFScdDsyq-kQw6yzXyY7IEVSzutAgo',
       network: Network.ETH_MAINNET,
     };
-
+  
     const alchemy = new Alchemy(config);
-    const data = await alchemy.core.getTokenBalances(userAddress);
-
-    setResults(data);
-
-    const tokenDataPromises = [];
-
-    for (let i = 0; i < data.tokenBalances.length; i++) {
-      const tokenData = alchemy.core.getTokenMetadata(
-        data.tokenBalances[i].contractAddress
-      );
-      tokenDataPromises.push(tokenData);
+  
+    let resolvedAddress = userAddress;
+    if (userAddress.endsWith('.eth')) {
+      try {
+        const resolved = await alchemy.core.resolveName(userAddress);
+        if (!resolved) {
+          alert('Could not resolve ENS name to an address');
+          return;
+        }
+        resolvedAddress = resolved;
+      } catch (err) {
+        console.error('Error resolving ENS name:', err);
+        alert('Failed to resolve ENS name');
+        return;
+      }
     }
-
+  
+    const data = await alchemy.core.getTokenBalances(resolvedAddress);
+    setResults(data);
+  
+    const tokenDataPromises = data.tokenBalances.map((token) =>
+      alchemy.core.getTokenMetadata(token.contractAddress)
+    );
+  
     setTokenDataObjects(await Promise.all(tokenDataPromises));
     setHasQueried(true);
   }
