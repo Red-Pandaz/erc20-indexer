@@ -17,6 +17,31 @@ function App() {
   const [results, setResults] = useState([]);
   const [hasQueried, setHasQueried] = useState(false);
   const [tokenDataObjects, setTokenDataObjects] = useState([]);
+  const [walletConnected, setWalletConnected] = useState(false);
+
+  async function connectWallet() {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const address = accounts[0];
+        const config = {
+          apiKey: 'FjVFScdDsyq-kQw6yzXyY7IEVSzutAgo',
+          network: Network.ETH_MAINNET,
+        };
+        const alchemy = new Alchemy(config);
+  
+        // Try to resolve ENS name for connected address
+        const ensName = await alchemy.core.lookupAddress(address);
+  
+        setUserAddress(ensName || address); // Use ENS name if available
+        setWalletConnected(true);
+      } catch (err) {
+        console.error('MetaMask connection error:', err);
+      }
+    } else {
+      alert('Please install MetaMask');
+    }
+  }
 
   async function getTokenBalance() {
     const config = {
@@ -79,6 +104,7 @@ function App() {
           Get all the ERC-20 token balances of this address:
         </Heading>
         <Input
+          value={userAddress}
           onChange={(e) => setUserAddress(e.target.value)}
           color="black"
           w="600px"
@@ -87,6 +113,9 @@ function App() {
           bgColor="white"
           fontSize={24}
         />
+        <Button onClick={connectWallet} fontSize={20} mt={36} colorScheme="blue">
+          {walletConnected ? 'Wallet Connected' : 'Connect MetaMask'}
+        </Button>
         <Button fontSize={20} onClick={getTokenBalance} mt={36} bgColor="blue">
           Check ERC-20 Token Balances
         </Button>
@@ -128,3 +157,11 @@ function App() {
 }
 
 export default App;
+
+// There is no indication of a request in progress... that's bad UX! Do you think you can add some sort of indication of loading?
+// Add some styling! 🎨
+// The token balances can sometimes be a little long and break the outline of the page... can you fix that? 🔧
+// There is no error-checking for wrongly formed requests, or really any error checking of any kind... can you add some in?
+// The images and grid display could look better... anything you can do about that?
+// There are ways to make this app faster... can you implement some of them? How can the query be made even quicker?
+// Completely open-ended!! Use this as the base for your next hackathon project, dream company or personal expedition :)
