@@ -43,40 +43,57 @@ function App() {
     }
   }
 
-  async function getTokenBalance() {
-    const config = {
-      apiKey: 'FjVFScdDsyq-kQw6yzXyY7IEVSzutAgo',
-      network: Network.ETH_MAINNET,
-    };
+  function isValidEthereumAddress(address) {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+  }
   
-    const alchemy = new Alchemy(config);
-  
-    let resolvedAddress = userAddress;
-    if (userAddress.endsWith('.eth')) {
-      try {
-        const resolved = await alchemy.core.resolveName(userAddress);
-        if (!resolved) {
-          alert('Could not resolve ENS name to an address');
-          return;
-        }
-        resolvedAddress = resolved;
-      } catch (err) {
-        console.error('Error resolving ENS name:', err);
-        alert('Failed to resolve ENS name');
+  function isValidENSName(name) {
+    return name.endsWith('.eth') && name.length > 4;
+  }
+ async function getTokenBalance() {
+  if (!isValidEthereumAddress(userAddress) && !isValidENSName(userAddress)) {
+    alert('Please enter a valid Ethereum address or ENS name.');
+    return;
+  }
+
+  const config = {
+    apiKey: 'FjVFScdDsyq-kQw6yzXyY7IEVSzutAgo',
+    network: Network.ETH_MAINNET,
+  };
+
+  const alchemy = new Alchemy(config);
+
+  let resolvedAddress = userAddress;
+  if (isValidENSName(userAddress)) {
+    try {
+      const resolved = await alchemy.core.resolveName(userAddress);
+      if (!resolved) {
+        alert('Could not resolve ENS name to an address');
         return;
       }
+      resolvedAddress = resolved;
+    } catch (err) {
+      console.error('Error resolving ENS name:', err);
+      alert('Failed to resolve ENS name');
+      return;
     }
-  
+  }
+
+  try {
     const data = await alchemy.core.getTokenBalances(resolvedAddress);
     setResults(data);
-  
+
     const tokenDataPromises = data.tokenBalances.map((token) =>
       alchemy.core.getTokenMetadata(token.contractAddress)
     );
-  
+
     setTokenDataObjects(await Promise.all(tokenDataPromises));
     setHasQueried(true);
+  } catch (err) {
+    console.error('Error fetching token balances:', err);
+    alert('Failed to fetch token balances. Please try again.');
   }
+}
   return (
     <Box w="100vw">
       <Center>
